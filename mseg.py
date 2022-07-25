@@ -1109,8 +1109,8 @@ def onsite_calc(generation_file, json_results):
 
     # Pull the onsite generation by census division
     for div in cdivdict:
-        cdiv = gen_data[gen_data['Division'] == cdivdict[div]][[
-            'Year', 'OwnUse']]
+        cdiv = gen_data[gen_data['Division'] == cdivdict[div]][
+            ['Year', 'OwnUse']]
         years = numpy.unique(cdiv['Year'])
         cdiv['OwnUse'] = cdiv['OwnUse']*to_mmbtu
         onsite_gen = dict([(i, cdiv[cdiv['Year'] == i][
