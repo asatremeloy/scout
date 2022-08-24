@@ -1296,28 +1296,35 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist):
                 # ylim_ann = pretty(min_val_ann, max_val_ann, 10)
 
                 # Initialize plot region for total annual savings and savings
-                # by filter variable category
-                axb.plot(years, total_ann, lw=3, color="#4d4d4d", label="")
-                buff_a = 0.05 * abs(max_val_ann - min_val_ann)
-                axb.set_xlim(2018, 2052)  # hardcode years
-                axb.set_ylim(min_val_ann-buff_a, max_val_ann+buff_a)
-                axb.set_ylabel(plot_axis_labels_agg_ann[v])
-                axb.set_xlabel("Year")
+                # by filter variable category, assuming savings aren't zero
+                if any([not math.isclose(x, 0, abs_tol=1e-9) for
+                        x in total_cum]):
+                    axb.plot(
+                        years, total_ann, lw=3, color="#4d4d4d", label="")
+                    buff_a = 0.05 * abs(max_val_ann - min_val_ann)
+                    axb.set_xlim(2018, 2052)  # hardcode years
+                    axb.set_ylim(min_val_ann-buff_a, max_val_ann+buff_a)
+                    axb.set_ylabel(plot_axis_labels_agg_ann[v])
+                    axb.set_xlabel("Year")
 
-                # Develop y limits for total cumulative savings
-                min_val_cum = min(total_cum)
-                max_val_cum = max(total_cum)
-                # ylim_cum = pretty(min_val_cum, max_val_cum, 10)
+                    # Develop y limits for total cumulative savings
+                    min_val_cum = min(total_cum)
+                    max_val_cum = max(total_cum)
+                    # ylim_cum = pretty(min_val_cum, max_val_cum, 10)
 
-                # Initialize plot region for total cumulative savings
-                axb2 = axb.twinx()
-                # Add total cumulative savings line
-                axb2.plot(years, total_cum, lw=3, color="#7f7f7f", ls='dotted')
-                buff_c = 0.05 * abs(max_val_cum - min_val_cum)
-                axb2.set_ylim(min_val_cum-buff_c, max_val_cum+buff_c)
-                axb2.set_ylabel(plot_axis_labels_agg_cum[v])
+                    # Initialize plot region for total cumulative savings
+                    axb2 = axb.twinx()
+                    # Add total cumulative savings line
+                    axb2.plot(
+                        years, total_cum, lw=3, color="#7f7f7f", ls='dotted')
+                    buff_c = 0.05 * abs(max_val_cum - min_val_cum)
+                    axb2.set_ylim(min_val_cum-buff_c, max_val_cum+buff_c)
+                    axb2.set_ylabel(plot_axis_labels_agg_cum[v])
 
-                axb.set_title(plot_titles_agg[v] + ' by ' + filter_var[f])
+                    axb.set_title(plot_titles_agg[v] + ' by ' + filter_var[f])
+                else:  # produce blank plots
+                    axb.set_xlim(0, 1)
+                    axb.set_ylim(0, 1)
 
                 # Add total aggregate savings data across all climate zones,
                 # building types, and end uses to the data frame that will be
@@ -1443,11 +1450,6 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist):
             plt.savefig(plot_file_name_agg + "-Aggregate.pdf",
                         bbox_inches='tight')
 
-            # convert NoneType in the list into NaN
-            res1 = numpy.array(results_finmets[:, :6], dtype=float)
-            res2 = results_finmets[:, 6:]
-            results_finmets = numpy.column_stack((res1, res2))
-
             fig, axcs = plt.subplots(2, 2, figsize=(10, 7))
             for (axc, fmp) in zip(fig.axes, range(len(fin_metrics))):
                 # Shorthands for x and y data on the plot
@@ -1457,8 +1459,10 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist):
                     range(len(s_x)), key=lambda k: s_x[k], reverse=True)
                 # Indices of sorted x data constrained to points where
                 # associated y data are within pre-defined range for plots
+                # and savings are non-zero
                 final_index_non_na = [i for i in sorted_ind if (
-                    (s_y[i] > -500) and (s_y[i] < 500))]
+                    (s_y[i] > -500) and (s_y[i] < 500) and
+                    not math.isclose(s_x[i], 0, abs_tol=1e-9))]
                 # Indices of sorted x data constrained to points where
                 # associated y data are within pre-defined range for plots
                 # and meet cost effectiveness threshold
@@ -1622,6 +1626,9 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist):
                                  verticalalignment=aln,
                                  fontdict=dict(color="black", size=6),
                                  zorder=1)
+                else:  # produce blank plots
+                    axc.set_xlim(0, 1)
+                    axc.set_ylim(0, 1)
 
             # Add a series of legends to the second page of the PDF device
             # that distinguish the applicable climate zone, building type,
