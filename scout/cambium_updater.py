@@ -5,6 +5,7 @@ This module can be used to update annual and hourly electricity CO2 intensities
 for varying electricity system scenarios using data from the NREL Cambium
 database, available at: https://scenarioviewer.nrel.gov/. Cambium documentation
 for 2023 is available at: https://www.nrel.gov/docs/fy24osti/88507.pdf.
+for 2023 is available at: https://www.nrel.gov/docs/fy24osti/88507.pdf.
 
 This module will update the following metrics for a given Cambium grid
 scenario:
@@ -65,6 +66,7 @@ class UsefulInputFiles(object):
 
     Attributes:
         ba_emm_map (Path): File containing mapping of EMM regions to Cambium BA
+        ba_emm_map (Path): File containing mapping of EMM regions to Cambium BA
             regions.
         ss_ref (Path): Site-source, emissions, and price data, national
             for AEO Reference Case.
@@ -122,6 +124,9 @@ class UsefulInputFiles(object):
         self.ba_emm_map = (
             fp.CONVERT_DATA / "geo_map" / "scout_reeds_emm_mapping_112520.csv"
         )
+        self.ba_emm_map = (
+            fp.CONVERT_DATA / "geo_map" / "scout_reeds_emm_mapping_112520.csv"
+        )
         # Set the path to the national site-source conversions file
         # for the AEO Reference Case
         self.ss_ref = (
@@ -133,8 +138,26 @@ class UsefulInputFiles(object):
         self.state_ref = (
             fp.CONVERT_DATA / "state_emissions_prices.json"
         )
+        self.ss_ref = (
+            fp.CONVERT_DATA / "site_source_co2_conversions.json"
+        )
+        self.emm_ref = (
+            fp.CONVERT_DATA / "emm_region_emissions_prices.json"
+        )
+        self.state_ref = (
+            fp.CONVERT_DATA / "state_emissions_prices.json"
+        )
         # Set the path to the national site-source conversions file
         # for all Cambium scenarios
+        self.ss_midcase = (
+            fp.CONVERT_DATA / "site_source_co2_conversions-MidCase.json"
+        )
+        self.ss_95by2050 = (
+            fp.CONVERT_DATA / "site_source_co2_conversions-95by2050.json"
+        )
+        self.ss_100by2035 = (
+            fp.CONVERT_DATA / "site_source_co2_conversions-100by2035.json"
+        )
         self.ss_midcase = (
             fp.CONVERT_DATA / "site_source_co2_conversions-MidCase.json"
         )
@@ -254,6 +277,52 @@ class UsefulInputFiles(object):
                 }
             }
         }
+        self.file_paths = {
+            'ss': {
+                'Ref': self.ss_ref,
+                'MidCase': self.ss_midcase,
+                'Decarb95by2050': self.ss_95by2050,
+                'Decarb100by2035': self.ss_100by2035
+            },
+            'emm': {
+                'Ref': self.emm_ref,
+                'MidCase': self.emm_midcase,
+                'Decarb95by2050': self.emm_95by2050,
+                'Decarb100by2035': self.emm_100by2035
+            },
+            'state': {
+                'Ref': self.state_ref,
+                'MidCase': self.state_midcase,
+                'Decarb95by2050': self.state_95by2050,
+                'Decarb100by2035': self.state_100by2035
+            },
+            'tsv': {
+                'emm': {
+                    'cost': {
+                        'MidCase': self.tsv_cost_emm_midcase,
+                        'Decarb95by2050': self.tsv_cost_emm_95by2050,
+                        'Decarb100by2035': self.tsv_cost_emm_100by2035
+                    },
+                    'carbon': {
+                        'MidCase': self.tsv_carbon_emm_midcase,
+                        'Decarb95by2050': self.tsv_carbon_emm_95by2050,
+                        'Decarb100by2035': self.tsv_carbon_emm_100by2035
+                    }
+                },
+                'state': {
+                    'cost': {
+                        'MidCase': self.tsv_cost_state_midcase,
+                        'Decarb95by2050': self.tsv_cost_state_95by2050,
+                        'Decarb100by2035': self.tsv_cost_state_100by2035
+                    },
+                    'carbon': {
+                        'MidCase': self.tsv_carbon_state_midcase,
+                        'Decarb95by2050': self.tsv_carbon_state_95by2050,
+                        'Decarb100by2035': self.tsv_carbon_state_100by2035
+                    }
+                }
+            }
+        }
 
 
 class ValidQueries(object):
@@ -268,6 +337,9 @@ class ValidQueries(object):
     """
 
     def __init__(self):
+        self.years = ['2022', '2023']
+        self.scenarios = ['MidCase', 'Decarb95by2050',
+                          'Decarb100by2035']
         self.years = ['2022', '2023']
         self.scenarios = ['MidCase', 'Decarb95by2050',
                           'Decarb100by2035']
@@ -288,6 +360,8 @@ def import_ba_emm_mapping():
     mapping = mapping.drop_duplicates(
         subset=['cambium_ba'])[[
             'cambium_ba', 'EMM_2020', 'state_abbr']].reset_index(
+        subset=['cambium_ba'])[[
+            'cambium_ba', 'EMM_2020', 'state_abbr']].reset_index(
         drop=True)
     # change name of BASIN to BASN
     mapping['EMM_2020'] = mapping.apply(
@@ -302,6 +376,8 @@ def cambium_data_import(cambium_base_dir, year, scenario):
     Args:
         scenario (str): Cambium scenario ['MidCase', 'Decarb95by2050',
                                           'Decarb100by2035'].
+        scenario (str): Cambium scenario ['MidCase', 'Decarb95by2050',
+                                          'Decarb100by2035'].
         year (str): Cambium data year.
 
     Returns:
@@ -310,14 +386,16 @@ def cambium_data_import(cambium_base_dir, year, scenario):
         and region (Cambium Balancing Authority)
     """
     # create list of files
-    files = list(Path(cambium_base_dir, year, scenario).glob("*202*.csv"))
+    files = list(Path(cambium_base_dir, year, scenario).glob("*20*.csv"))
     # create df from multiple CSVs in working directory and assign new 'ba'
     # column to appropriate file name; parse dates with datetime
     ba_df = pd.concat(
         map(lambda file: pd.read_csv(
             str(file.resolve()), parse_dates=['timestamp', 'timestamp_local'],
+            str(file.resolve()), parse_dates=['timestamp', 'timestamp_local'],
             header=5).assign(
                 # extract "pXX" from file name and assign to ba
+                ba=re.search(r'p\d+', str(file)).group()), files))
                 ba=re.search(r'p\d+', str(file)).group()), files))
     return ba_df
 
@@ -367,6 +445,7 @@ def annual_factors_updater(df, ss, geography):
         # Resample yearly with linear interpolation and set year as string
         df_resamp = df_nat.resample(
                             'YE').mean().interpolate(
+                            'YE').mean().interpolate(
                                 method='linear').assign(
                                     year=lambda x: x.index.year.astype(
                                         str)).reset_index(drop=True)
@@ -389,6 +468,8 @@ def annual_factors_updater(df, ss, geography):
             co2_dict)
     elif geography == "EMM":
         # Group data frame by EMM region and year and calculate average CO2
+    elif geography == "EMM":
+        # Group data frame by EMM region and year and calculate average CO2
         # emissions intensity
         df_reg = df.groupby(
             ['EMM_2020', 'year'])[['co2_avg_enduse_mt_twh']].mean(
@@ -400,16 +481,20 @@ def annual_factors_updater(df, ss, geography):
         df_resamp = df_reg.groupby(
             'EMM_2020').resample(
             'YE').mean().interpolate(
+            'YE').mean().interpolate(
             method='linear').reset_index(
             level=0).assign(
                 year=lambda x: x.index.year.astype(str)).reset_index(
                     drop=True)
         # Create dictionary of year:value pairs for each EMM region
-        co2_dict = {n: dict(zip(grp.loc[n].index, (grp.loc[n].values.flat)))
-                    for n, grp in df_resamp.drop(
-                        'co2_avg_enduse_mt_twh', axis=1).set_index(
-                        ['EMM_2020', 'year']).groupby(
-                            level=['EMM_2020'])}
+        # co2_dict = {n: dict(zip(grp.loc[n].index, (grp.loc[n].values.flat)))
+        #             for n, grp in df_resamp.drop(
+        #                 'co2_avg_enduse_mt_twh', axis=1).set_index(
+        #                 ['EMM_2020', 'year']).groupby(
+        #                     level=['EMM_2020'])}
+        co2_dict = {emm: {year: value for year, value in zip(group['year'],
+                          group['co2_avg_enduse_mt_twh'])}
+                    for emm, group in df_resamp.groupby('EMM_2020')}
         # Save final dictionary for output
         {ss['CO2 intensity of electricity']['data'][key].update(val)
          for key, val in co2_dict.items()}
@@ -431,11 +516,9 @@ def annual_factors_updater(df, ss, geography):
                 year=lambda x: x.index.year.astype(str)).reset_index(
                     drop=True)
         # Create dictionary of year:value pairs for each EMM region
-        co2_dict = {n: dict(zip(grp.loc[n].index, (grp.loc[n].values.flat)))
-                    for n, grp in df_resamp.drop(
-                        'co2_avg_enduse_mt_twh', axis=1).set_index(
-                        ['state_abbr', 'year']).groupby(
-                            level=['state_abbr'])}
+        co2_dict = {state: {year: value for year, value in zip(group['year'],
+                            group['co2_avg_enduse_mt_twh'])}
+                    for state, group in df_resamp.groupby('state_abbr')}
         # Save final dictionary for output
         {ss['CO2 intensity of electricity']['data'][key].update(val)
          for key, val in co2_dict.items()}
@@ -445,6 +528,7 @@ def annual_factors_updater(df, ss, geography):
 
 
 def generate_hourly_factors(df, geography):
+def generate_hourly_factors(df, geography):
     """Generate hourly CO2 emissions and electricity price scaling
        factors to update supporting data TSV files based on Cambium
        data for a given scenario.
@@ -452,6 +536,7 @@ def generate_hourly_factors(df, geography):
     Args:
         df (data frame): Data frame of Cambium data mapped to EMM regions
             for a given scenario.
+        geography (str): Geographic resolution for data aggregation.
         geography (str): Geographic resolution for data aggregation.
 
     Returns:
@@ -494,14 +579,48 @@ def generate_hourly_factors(df, geography):
                              how='left')
     else:
         print('Invalid geography entered.')
+    if geography == "EMM":
+        # Calculate EMM region & national annual averages for CO2
+        # emissions/price metrics
+        reg_ann_avg = df.groupby(
+            ['EMM_2020', 'year'])[metrics].mean().reset_index()
+        ann_avg = df.groupby(['year'])[metrics].mean().reset_index()
+        # Join EMM region & national annual averages to calculate scaling
+        # fractions
+        scaling = pd.merge(reg_ann_avg, ann_avg, on='year', how='left',
+                           suffixes=('_reg_ann_avg', '_ann_avg'))
+        # Fix BASIN typo to enable clean join
+        scaling['EMM_2020'] = scaling.apply(
+            lambda x: 'BASN' if x['EMM_2020'] == 'BASIN' else x['EMM_2020'],
+            axis=1)
+        # Join scaling fractions to original Cambium data
+        df_scaled = pd.merge(df, scaling, on=['EMM_2020', 'year'], how='left')
+    elif geography == "State":
+        # Calculate state & national annual averages for CO2 emissions/price
+        # metrics
+        reg_ann_avg = df.groupby(
+            ['state_abbr', 'year'])[metrics].mean().reset_index()
+        ann_avg = df.groupby(['year'])[metrics].mean().reset_index()
+        # Join EMM region & national annual averages to calculate scaling
+        # fractions
+        scaling = pd.merge(reg_ann_avg, ann_avg, on='year', how='left',
+                           suffixes=('_reg_ann_avg', '_ann_avg'))
+        # Join scaling fractions to original Cambium data
+        df_scaled = pd.merge(df, scaling, on=['state_abbr', 'year'],
+                             how='left')
+    else:
+        print('Invalid geography entered.')
     # Create new columns, where hourly values are multiplied by a scaling
+    # factor that represents the ratio between the within-region annual
     # factor that represents the ratio between the within-region annual
     # average and the national annual average in each year
     df_scaled['electricity price shapes'] = (
         df_scaled['total_cost_enduse'] /
         df_scaled['total_cost_enduse_reg_ann_avg'])
+        df_scaled['total_cost_enduse_reg_ann_avg'])
     df_scaled['average carbon emissions rates'] = (
         df_scaled['aer_load_co2_c'] /
+        df_scaled['aer_load_co2_c_reg_ann_avg']).fillna(0)
         df_scaled['aer_load_co2_c_reg_ann_avg']).fillna(0)
     # Convert year column to string
     df_scaled['year'] = df_scaled['year'].astype(str)
@@ -521,14 +640,34 @@ def generate_hourly_factors(df, geography):
     else:
         print('Invalid geography entered.')
     return df_reg
+    if geography == "EMM":
+        # Create data frame with 8760s for each scaled metric by EMM region
+        df_reg = df_scaled.groupby(
+            ['year', 'month', 'day', 'hour',
+             'EMM_2020'])[metrics_names].mean().reset_index()
+    elif geography == "State":
+        # Create data frame with 8760s for each scaled metric by state
+        df_reg = df_scaled.groupby(
+            ['year', 'month', 'day', 'hour',
+             'state_abbr'])[metrics_names].mean().reset_index()
+    else:
+        print('Invalid geography entered.')
+    return df_reg
 
 
+def hourly_factors_updater(df, scenario, year, metric, geography):
 def hourly_factors_updater(df, scenario, year, metric, geography):
     """
     Update existing hourly cost/carbon tsv files with scaling fractions
     from Cambium data for a given scenario.
 
     Args:
+        scenario (str): Cambium scenario ['MidCase', 'Decarb95by2050',
+                                          'Decarb100by2035']
+        df_reg (data frame): Data frame of hourly emissions and price scaling
+            factors from Cambium data for a given scenario, with EMM or state
+            resolution.
+        geography (str): Geographic resolution for data aggregation.
         scenario (str): Cambium scenario ['MidCase', 'Decarb95by2050',
                                           'Decarb100by2035']
         df_reg (data frame): Data frame of hourly emissions and price scaling
@@ -548,9 +687,18 @@ def hourly_factors_updater(df, scenario, year, metric, geography):
         regions = df['state_abbr'].unique()
     else:
         print('Invalid geography entered.')
+    if geography == "EMM":
+        # Create vars to iterate over
+        regions = df['EMM_2020'].unique()
+    elif geography == "State":
+        # Create vars to iterate over
+        regions = df['state_abbr'].unique()
+    else:
+        print('Invalid geography entered.')
     # Create vars to iterate over
     data_years = df['year'].unique()
     # Create dictionaries to store results
+    dict_regions = dict.fromkeys(regions)
     dict_regions = dict.fromkeys(regions)
     dict_results = dict.fromkeys(data_years)
     # Create documentation header for json files
@@ -559,13 +707,18 @@ def hourly_factors_updater(df, scenario, year, metric, geography):
                      'Values represent hourly total cost '
                      'values (sum of energy, capacity, '
                      'operating reserve, and policy costs). '
+                     'operating reserve, and policy costs). '
                      'Values are first averaged across all '
                      'Cambium BA areas that comprise a given '
                      'region and then are normalized by '
+                     'region and then are normalized by '
                      'the annual average total cost for that '
+                     'region.',
                      'region.',
                      'carbon':
                      'Values represent the hourly average '
+                     'CO2 emissions rate of the generation '
+                     'that is allocated to a region’s '
                      'CO2 emissions rate of the generation '
                      'that is allocated to a region’s '
                      'end-use load. This metric includes '
@@ -574,7 +727,41 @@ def hourly_factors_updater(df, scenario, year, metric, geography):
                      'all Cambium BA areas that comprise a '
                      'given region and then are normalized '
                      'by the annual average co2 rate for that region.'}
+                     'given region and then are normalized '
+                     'by the annual average co2 rate for that region.'}
     # For loop to pull scaling factors for each year and EMM region
+    if geography == "EMM":
+        for y in data_years:
+            for r in regions:
+                if metric == 'cost':
+                    dict_regions[r] = df[(df['year'] == y) &
+                                         (df['EMM_2020'] == r)][
+                                         'electricity price shapes'].to_list()
+                elif metric == 'carbon':
+                    dict_regions[r] = df[
+                        (df['year'] == y) &
+                        (df['EMM_2020'] == r)][
+                        'average carbon emissions rates'].to_list()
+                else:
+                    print('Invalid metric entered.')
+            dict_results[y] = dict_regions
+            dict_regions = dict.fromkeys(regions)
+    elif geography == "State":
+        for y in data_years:
+            for r in regions:
+                if metric == 'cost':
+                    dict_regions[r] = df[(df['year'] == y) &
+                                         (df['state_abbr'] == r)][
+                                         'electricity price shapes'].to_list()
+                elif metric == 'carbon':
+                    dict_regions[r] = df[
+                        (df['year'] == y) &
+                        (df['state_abbr'] == r)][
+                        'average carbon emissions rates'].to_list()
+                else:
+                    print('Invalid metric entered.')
+            dict_results[y] = dict_regions
+            dict_regions = dict.fromkeys(regions)
     if geography == "EMM":
         for y in data_years:
             for r in regions:
@@ -677,8 +864,8 @@ def main():
                 print('Invalid year entered.')
             else:
                 break
-        # Load existing national supporting data file for specified scenario
-        with open(UsefulInputFiles().file_paths['ss'][scenario], "r") as js:
+        # Load Ref Case National supporting data file
+        with open(UsefulInputFiles().file_paths['ss']['Ref'], "r") as js:
             ss_nat = json.load(js)
         # Import mapping file to map Cambium BA regions to EMM regions
         ba_emm_map = import_ba_emm_mapping()
@@ -704,17 +891,22 @@ def main():
         # a given Cambium scenario to file
         with open(UsefulInputFiles().file_paths['ss'][scenario],
                   'w') as json_file:
+        with open(UsefulInputFiles().file_paths['ss'][scenario],
+                  'w') as json_file:
             json.dump(ss_updated, json_file, sort_keys=False, indent=2)
         # Notify user that EMM region supporting factors are updating
         print('Updating EMM region annual emissions intensities data...')
-        # Load existing EMM region supporting data file for specified scenario
-        with open(UsefulInputFiles().file_paths['emm'][scenario], "r") as js:
+        # Load existing Ref Case EMM region supporting data file
+        with open(UsefulInputFiles().file_paths['emm']['Ref'], "r") as js:
             ss_emm = json.load(js)
         # Update EMM region annual CO2 emissions intensities for annual data
         # for a given Cambium scenario
         ss_emm_updated = annual_factors_updater(df, ss_emm, 'EMM')
+        ss_emm_updated = annual_factors_updater(df, ss_emm, 'EMM')
         # Update year and Cambium case keys in dictionary to reflect
         # data updates
+        ss_emm_updated['updated_to_cambium_case'] = scenario
+        ss_emm_updated['updated_to_cambium_year'] = year
         ss_emm_updated['updated_to_cambium_case'] = scenario
         ss_emm_updated['updated_to_cambium_year'] = year
         # Notify user that EMM region supporting factors are writing to file
@@ -724,8 +916,10 @@ def main():
         with open(UsefulInputFiles().file_paths['emm'][scenario],
                   'w') as json_file:
             json.dump(ss_emm_updated, json_file, sort_keys=False, indent=2)
-        # Load existing State supporting data file for specified scenario
-        with open(UsefulInputFiles().file_paths['state'][scenario], "r") as js:
+        # Notify user that state supporting factors are updating
+        print('Updating state annual emissions intensities data...')
+        # Load existing Ref Case State supporting data file
+        with open(UsefulInputFiles().file_paths['state']['Ref'], "r") as js:
             ss_state = json.load(js)
         # Update State CO2 emissions intensities for annual data
         # for a given Cambium scenario
@@ -761,7 +955,45 @@ def main():
                 'wt') as fp:
             json.dump(hourly_cost_json_emm, fp, sort_keys=True, indent=4)
         print('Writing EMM CO2 emissions scaling factors to file...')
+        print('Writing EMM price scaling factors to file...')
+        # # Write hourly price scaling factors to file
+        with gzip.open(
+            UsefulInputFiles().file_paths['tsv']['emm']['cost'][scenario],
+                'wt') as fp:
+            json.dump(hourly_cost_json_emm, fp, sort_keys=True, indent=4)
+        print('Writing EMM CO2 emissions scaling factors to file...')
         # Write hourly CO2 emissions scaling factors to file
+        with gzip.open(
+            UsefulInputFiles().file_paths['tsv']['emm']['carbon'][scenario],
+                'wt') as fp:
+            json.dump(hourly_carbon_json_emm, fp, sort_keys=True, indent=4)
+        # Notify user that State hourly supporting factors are updating
+        print('Updating State hourly emissions and price factors...')
+        # Update state hourly CO2 emissions and price scaling factors
+        df_hour_state = generate_hourly_factors(df, 'State')
+        hourly_cost_json_state = hourly_factors_updater(df_hour_state,
+                                                        scenario,
+                                                        year,
+                                                        metric='cost',
+                                                        geography='State')
+        hourly_carbon_json_state = hourly_factors_updater(df_hour_state,
+                                                          scenario,
+                                                          year,
+                                                          metric='carbon',
+                                                          geography='State')
+        # Notify user that hourly supporting factors are writing to file
+        print('Writing State price scaling factors to file...')
+        # Write State hourly price scaling factors to file
+        with gzip.open(
+            UsefulInputFiles().file_paths['tsv']['state']['cost'][scenario],
+                'wt') as fp:
+            json.dump(hourly_cost_json_state, fp, sort_keys=True, indent=4)
+        print('Writing State CO2 emissions scaling factors to file...')
+        # Write State hourly CO2 emissions scaling factors to file
+        with gzip.open(
+            UsefulInputFiles().file_paths['tsv']['state']['carbon'][scenario],
+                'wt') as fp:
+            json.dump(hourly_carbon_json_state, fp, sort_keys=True, indent=4)
         with gzip.open(
             UsefulInputFiles().file_paths['tsv']['emm']['carbon'][scenario],
                 'wt') as fp:
@@ -811,6 +1043,9 @@ def main():
             # to the site_to_source conversions json or EMM region
             # emissions/price projections json or State emissions/price
             # projections.
+            # to the site_to_source conversions json or EMM region
+            # emissions/price projections json or State emissions/price
+            # projections.
             while True:
                 geography = input('Please specify the desired '
                                   'file type to update. '
@@ -818,14 +1053,33 @@ def main():
                                   ', '.join(['National',
                                              'EMM',
                                              'State']) +
+                                             'EMM',
+                                             'State']) +
                                   '.\n')
                 if geography not in ['National',
+                                     'EMM',
+                                     'State']:
                                      'EMM',
                                      'State']:
                     print('Invalid file type entered.')
                 else:
                     break
         else:
+            # Ask the user to specify the desired update to make, whether
+            # to the EMM region hourly emissions/price projections json or
+            # State emissions/price projections.
+            while True:
+                geography = input('Please specify the desired '
+                                  'file type to update. '
+                                  'Valid entries are: ' +
+                                  ', '.join(['EMM',
+                                             'State']) +
+                                  '.\n')
+                if geography not in ['EMM',
+                                     'State']:
+                    print('Invalid file type entered.')
+                else:
+                    break
             # Ask the user to specify the desired update to make, whether
             # to the EMM region hourly emissions/price projections json or
             # State emissions/price projections.
@@ -865,7 +1119,7 @@ def main():
         if temporal_res == "Annual":
             # Load existing national supporting data file for specified
             # scenario
-            with open(UsefulInputFiles().file_paths['ss'][scenario],
+            with open(UsefulInputFiles().file_paths['ss']['Ref'],
                       "r") as js:
                 ss_nat = json.load(js)
             # Import mapping file to map Cambium BA regions to EMM regions
@@ -894,21 +1148,25 @@ def main():
                 # data for a given Cambium scenario to file
                 with open(UsefulInputFiles().file_paths['ss'][scenario],
                           'w') as json_file:
+                with open(UsefulInputFiles().file_paths['ss'][scenario],
+                          'w') as json_file:
                     json.dump(ss_updated, json_file, sort_keys=False, indent=2)
                 # Notify user that update is complete.
                 print('Update complete.')
             elif geography == "EMM":
+            elif geography == "EMM":
                 # Notify user that EMM region supporting factors are updating
                 print(
                     'Updating EMM region annual emissions intensities data...')
-                # Load existing EMM region supporting data file for specified
+                # Load Ref case EMM region supporting data file for specified
                 # scenario
-                with open(UsefulInputFiles().file_paths['emm'][scenario],
+                with open(UsefulInputFiles().file_paths['emm']['Ref'],
                           "r") as js:
                     ss_reg = json.load(js)
                 # Update EMM region annual CO2 emissions intensities for annual
                 # data for a given Cambium scenario
                 ss_updated = annual_factors_updater(df, ss_reg,
+                                                    'EMM')
                                                     'EMM')
                 # Update year and Cambium case keys in dictionary to reflect
                 # data updates
@@ -929,9 +1187,9 @@ def main():
                 # Notify user that State supporting factors are updating
                 print(
                     'Updating State annual emissions intensities data...')
-                # Load existing State supporting data file for specified
+                # Load Reference case State supporting data file for specified
                 # scenario
-                with open(UsefulInputFiles().file_paths['state'][scenario],
+                with open(UsefulInputFiles().file_paths['state']['Ref'],
                           "r") as js:
                     ss_reg = json.load(js)
                 # Update State annual CO2 emissions intensities for annual
@@ -954,6 +1212,84 @@ def main():
                 # Notify user that update is complete.
                 print('Update complete.')
         else:
+            if geography == "EMM":
+                # Import mapping file to map Cambium BA regions to EMM regions
+                ba_emm_map = import_ba_emm_mapping()
+                # Notify user that Cambium data are importing
+                print('Importing Cambium scenario data...')
+                # Import Cambium data for the specified year and scenario
+                cambium_df = cambium_data_import(cambium_file_path, year,
+                                                 scenario)
+                # Join mapping file to cambium data
+                df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
+                              right_on='cambium_ba', how='left')
+                # Notify user that hourly supporting factors are updating
+                print('Updating EMM Region hourly emissions and price \
+                      factors...')
+                # Update hourly CO2 emissions and price scaling factors
+                df_hour = generate_hourly_factors(df, geography='EMM')
+                hourly_cost_json = hourly_factors_updater(df_hour, scenario,
+                                                          year,
+                                                          metric='cost',
+                                                          geography='EMM')
+                hourly_carbon_json = hourly_factors_updater(df_hour, scenario,
+                                                            year,
+                                                            metric='carbon',
+                                                            geography='EMM')
+                # Notify user that hourly supporting factors are writing to
+                # file
+                print('Writing EMM Region price scaling factors to file...')
+                # Write hourly price scaling factors to file
+                with gzip.open(
+                    UsefulInputFiles().file_paths['tsv']['emm']['cost'][
+                                scenario], 'wt') as fp:
+                    json.dump(hourly_cost_json, fp, sort_keys=True, indent=4)
+                print('Writing EMM Region CO2 emissions scaling factors \
+                      to file...')
+                # Write hourly CO2 emissions scaling factors to file
+                with gzip.open(
+                    UsefulInputFiles().file_paths['tsv']['emm']['carbon'][
+                                scenario], 'wt') as fp:
+                    json.dump(hourly_carbon_json, fp, sort_keys=True, indent=4)
+                print('Update complete.')
+            elif geography == "State":
+                # Import mapping file to map Cambium BA regions to States
+                ba_emm_map = import_ba_emm_mapping()
+                # Notify user that Cambium data are importing
+                print('Importing Cambium scenario data...')
+                # Import Cambium data for the specified year and scenario
+                cambium_df = cambium_data_import(cambium_file_path, year,
+                                                 scenario)
+                # Join mapping file to cambium data
+                df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
+                              right_on='cambium_ba', how='left')
+                # Notify user that hourly supporting factors are updating
+                print('Updating hourly emissions and price scaling factors...')
+                # Update hourly CO2 emissions and price scaling factors
+                df_hour = generate_hourly_factors(df, 'State')
+                hourly_cost_json = hourly_factors_updater(df_hour, scenario,
+                                                          year,
+                                                          metric='cost',
+                                                          geography='State')
+                hourly_carbon_json = hourly_factors_updater(df_hour, scenario,
+                                                            year,
+                                                            metric='carbon',
+                                                            geography='State')
+                # Notify user that hourly supporting factors are writing to
+                # file
+                print('Writing State price scaling factors to file...')
+                # Write hourly price scaling factors to file
+                with gzip.open(
+                    UsefulInputFiles().file_paths['tsv']['state']['cost'][
+                                scenario], 'wt') as fp:
+                    json.dump(hourly_cost_json, fp, sort_keys=True, indent=4)
+                print('Writing State CO2 emissions scaling factors to file...')
+                # Write hourly CO2 emissions scaling factors to file
+                with gzip.open(
+                    UsefulInputFiles().file_paths['tsv']['state']['carbon'][
+                                scenario], 'wt') as fp:
+                    json.dump(hourly_carbon_json, fp, sort_keys=True, indent=4)
+                print('Update complete.')
             if geography == "EMM":
                 # Import mapping file to map Cambium BA regions to EMM regions
                 ba_emm_map = import_ba_emm_mapping()
