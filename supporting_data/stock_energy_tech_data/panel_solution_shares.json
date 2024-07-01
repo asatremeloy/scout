@@ -1,0 +1,155 @@
+{
+  "new england": {
+    "Low EE Upgrade": {
+      "No panel management": 0.4508795732668118,
+      "Panel replacement": 0.2083243490693403,
+      "Space/load control": 0.34079607766384806
+    },
+    "Mod EE Upgrade": {
+      "No panel management": 0.3335173598331496,
+      "Panel replacement": 0.31445309076888006,
+      "Space/load control": 0.3520295493979704
+    },
+    "High EE Upgrade": {
+      "No panel management": 0.35249342936136835,
+      "Panel replacement": 0.19803696244970057,
+      "Space/load control": 0.4494696081889311
+    }
+  },
+  "mid atlantic": {
+    "Low EE Upgrade": {
+      "No panel management": 0.2715032269118738,
+      "Panel replacement": 0.31964989434005375,
+      "Space/load control": 0.4088468787480725
+    },
+    "Mod EE Upgrade": {
+      "No panel management": 0.4602207343864425,
+      "Panel replacement": 0.26512972068207935,
+      "Space/load control": 0.27464954493147803
+    },
+    "High EE Upgrade": {
+      "No panel management": 0.20297265887821891,
+      "Panel replacement": 0.5825555079821404,
+      "Space/load control": 0.2144718331396407
+    }
+  },
+  "east north central": {
+    "Low EE Upgrade": {
+      "No panel management": 0.40287582239430875,
+      "Panel replacement": 0.3203461925897945,
+      "Space/load control": 0.2767779850158968
+    },
+    "Mod EE Upgrade": {
+      "No panel management": 0.263074910262001,
+      "Panel replacement": 0.42808051843111294,
+      "Space/load control": 0.308844571306886
+    },
+    "High EE Upgrade": {
+      "No panel management": 0.3207596924191796,
+      "Panel replacement": 0.41882120858327687,
+      "Space/load control": 0.2604190989975435
+    }
+  },
+  "west north central": {
+    "Low EE Upgrade": {
+      "No panel management": 0.25957520168157994,
+      "Panel replacement": 0.25372726668494444,
+      "Space/load control": 0.4866975316334755
+    },
+    "Mod EE Upgrade": {
+      "No panel management": 0.3779614624685042,
+      "Panel replacement": 0.09105740091655534,
+      "Space/load control": 0.5309811366149404
+    },
+    "High EE Upgrade": {
+      "No panel management": 0.37276660107291826,
+      "Panel replacement": 0.4014490875420761,
+      "Space/load control": 0.22578431138500565
+    }
+  },
+  "south atlantic": {
+    "Low EE Upgrade": {
+      "No panel management": 0.2441375161367134,
+      "Panel replacement": 0.3982603682304138,
+      "Space/load control": 0.35760211563287275
+    },
+    "Mod EE Upgrade": {
+      "No panel management": 0.4125877539428262,
+      "Panel replacement": 0.40759986864643694,
+      "Space/load control": 0.17981237741073675
+    },
+    "High EE Upgrade": {
+      "No panel management": 0.22018323179469151,
+      "Panel replacement": 0.1417226747034728,
+      "Space/load control": 0.6380940935018355
+    }
+  },
+  "east south central": {
+    "Low EE Upgrade": {
+      "No panel management": 0.38329319855054883,
+      "Panel replacement": 0.1631881363115194,
+      "Space/load control": 0.4535186651379317
+    },
+    "Mod EE Upgrade": {
+      "No panel management": 0.27849704417598464,
+      "Panel replacement": 0.37166780378394515,
+      "Space/load control": 0.3498351520400703
+    },
+    "High EE Upgrade": {
+      "No panel management": 0.586538209578381,
+      "Panel replacement": 0.03507385117960832,
+      "Space/load control": 0.37838793924201075
+    }
+  },
+  "west south central": {
+    "Low EE Upgrade": {
+      "No panel management": 0.18970214081893697,
+      "Panel replacement": 0.34168482309779147,
+      "Space/load control": 0.4686130360832716
+    },
+    "Mod EE Upgrade": {
+      "No panel management": 0.13443871900392826,
+      "Panel replacement": 0.3220997470184313,
+      "Space/load control": 0.5434615339776404
+    },
+    "High EE Upgrade": {
+      "No panel management": 0.36009011260829876,
+      "Panel replacement": 0.33659136723809435,
+      "Space/load control": 0.3033185201536068
+    }
+  },
+  "mountain": {
+    "Low EE Upgrade": {
+      "No panel management": 0.431274160991343,
+      "Panel replacement": 0.3582617245206279,
+      "Space/load control": 0.21046411448802907
+    },
+    "Mod EE Upgrade": {
+      "No panel management": 0.269820724252571,
+      "Panel replacement": 0.393922558120137,
+      "Space/load control": 0.336256717627292
+    },
+    "High EE Upgrade": {
+      "No panel management": 0.5301345066936801,
+      "Panel replacement": 0.26910835357360663,
+      "Space/load control": 0.2007571397327132
+    }
+  },
+  "pacific": {
+    "Low EE Upgrade": {
+      "No panel management": 0.42394721229708654,
+      "Panel replacement": 0.3778103196952577,
+      "Space/load control": 0.19824246800765566
+    },
+    "Mod EE Upgrade": {
+      "No panel management": 0.3319327086323959,
+      "Panel replacement": 0.2898902518473878,
+      "Space/load control": 0.3781770395202163
+    },
+    "High EE Upgrade": {
+      "No panel management": 0.4961125006842098,
+      "Panel replacement": 0.39496612271027853,
+      "Space/load control": 0.10892137660551164
+    }
+  }
+}
